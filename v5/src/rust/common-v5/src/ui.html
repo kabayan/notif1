@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notif v5 - AtomS3 Controller</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .tab:hover {
+            background: #eeeeee;
+        }
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        .content {
+            padding: 30px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .color-buttons {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .color-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid #ccc;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .color-btn:hover {
+            border-color: #667eea;
+        }
+        .status {
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .device-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .device-item {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .image-upload {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+        .image-upload:hover {
+            background: #f5f3ff;
+        }
+        .image-upload.dragover {
+            background: #f5f3ff;
+            border-color: #764ba2;
+        }
+        .image-preview {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        #fileInput {
+            display: none;
+        }
+        .image-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .curl-command {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            position: relative;
+        }
+        .curl-command pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+        .method-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .method-selector label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        .display-mode-selector, .api-version-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .display-mode-selector label, .api-version-selector label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Notif v5</h1>
+            <p>AtomS3 Display Controller</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('simple-text')">📝 シンプルテキスト</div>
+            <div class="tab" onclick="switchTab('area-text')">📐 エリアテキスト</div>
+            <div class="tab" onclick="switchTab('image')">🖼️ 画像</div>
+            <div class="tab" onclick="switchTab('draw')">🎨 描画</div>
+            <div class="tab" onclick="switchTab('devices')">📱 デバイス</div>
+        </div>
+        
+        <div class="content">
+            <!-- シンプルテキストタブ -->
+            <div id="simple-text-tab" class="tab-content active">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; color: #495057;">📝 シンプルテキスト送信</h3>
+                    <p style="margin-bottom: 0; color: #6c757d; font-size: 14px;">v1 API・GET専用・全画面表示</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>テキスト:</label>
+                    <textarea id="textInput" rows="3" placeholder="表示するテキストを入力..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>デバイス番号:</label>
+                    <select id="textDevice">
+                    </select>
+                    <small style="color: #666;">接続されているデバイスのみ表示</small>
+                </div>
+                
+                <div id="coordinateMode" class="form-group">
+                    <label>位置 (X, Y):</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="number" id="textX" value="0" min="0" max="127" placeholder="X">
+                        <input type="number" id="textY" value="0" min="0" max="127" placeholder="Y">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>文字色を選択:</label>
+                    <div class="color-buttons">
+                        <div class="color-btn" style="background: red" onclick="selectColor('red')"></div>
+                        <div class="color-btn" style="background: green" onclick="selectColor('green')"></div>
+                        <div class="color-btn" style="background: blue" onclick="selectColor('blue')"></div>
+                        <div class="color-btn" style="background: yellow" onclick="selectColor('yellow')"></div>
+                        <div class="color-btn" style="background: cyan" onclick="selectColor('cyan')"></div>
+                        <div class="color-btn" style="background: magenta" onclick="selectColor('magenta')"></div>
+                        <div class="color-btn" style="background: white" onclick="selectColor('white')"></div>
+                        <div class="color-btn" style="background: black; border-color: #666" onclick="selectColor('black')"></div>
+                    </div>
+                    <input type="text" id="textColor" value="white" placeholder="色名またはHEX">
+                </div>
+                <div class="form-group">
+                    <label>背景色を選択:</label>
+                    <div class="color-buttons">
+                        <div class="color-btn" style="background: red" onclick="selectBgColor('red')"></div>
+                        <div class="color-btn" style="background: green" onclick="selectBgColor('green')"></div>
+                        <div class="color-btn" style="background: blue" onclick="selectBgColor('blue')"></div>
+                        <div class="color-btn" style="background: yellow" onclick="selectBgColor('yellow')"></div>
+                        <div class="color-btn" style="background: cyan" onclick="selectBgColor('cyan')"></div>
+                        <div class="color-btn" style="background: magenta" onclick="selectBgColor('magenta')"></div>
+                        <div class="color-btn" style="background: white" onclick="selectBgColor('white')"></div>
+                        <div class="color-btn" style="background: black; border-color: #666" onclick="selectBgColor('black')"></div>
+                    </div>
+                    <input type="text" id="bgColor" value="black" placeholder="色名またはHEX">
+                </div>
+                <div class="form-group">
+                    <label>文字サイズ:</label>
+                    <select id="textSize">
+                        <option value="1">1 (Small)</option>
+                        <option value="2" selected>2 (Medium)</option>
+                        <option value="3">3 (Large)</option>
+                        <option value="4">4 (XLarge)</option>
+                    </select>
+                    <small style="color: #666;">文字の大きさを指定</small>
+                </div>
+                <div class="button-group">
+                    <button onclick="sendText()">テキスト送信</button>
+                    <button onclick="clearDisplay()">画面クリア</button>
+                </div>
+                <div id="curlCommand" class="curl-command" style="display: none;">
+                    <button class="copy-btn" onclick="copyCurlCommand()">コピー</button>
+                    <pre id="curlCommandText"></pre>
+                </div>
+            </div>
+            
+            <!-- エリアテキストタブ -->
+            <div id="area-text-tab" class="tab-content">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; color: #495057;">📐 エリアテキスト送信</h3>
+                    <p style="margin-bottom: 0; color: #6c757d; font-size: 14px;">領域指定可能・複数エリア対応・v1/v2 API選択可</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>デバイス番号:</label>
+                    <select id="areaTextDevice">
+                    </select>
+                    <small style="color: #666;">接続されているデバイスのみ表示</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>APIバージョン:</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="areaApiVersion" value="v1" checked onchange="toggleAreaApiVersion()" style="margin-right: 5px;">
+                            v1 (シンプル)
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="areaApiVersion" value="v2" onchange="toggleAreaApiVersion()" style="margin-right: 5px;">
+                            v2 (高度な制御)
+                        </label>
+                    </div>
+                    <small style="color: #666;">v2では真の領域クリッピングとバッチ送信が可能</small>
+                </div>
+                
+                <div class="form-group" id="areaSendMethodGroup" style="display: none;">
+                    <label>送信方法:</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="areaSendMethod" value="GET" checked style="margin-right: 5px;">
+                            GET
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="areaSendMethod" value="POST" style="margin-right: 5px;">
+                            POST
+                        </label>
+                    </div>
+                    <small style="color: #666;">v2 APIではGET/POST両方対応</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>エリア管理:</label>
+                    <button onclick="addMultiAreaRegion()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">➕ エリア追加</button>
+                    <small style="color: #666; margin-left: 10px;">複数エリアに異なるテキストを表示できます</small>
+                </div>
+                
+                <div id="multiAreaRegions" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <!-- 初期エリア（削除不可） -->
+                    <div id="area-region-1" class="area-region" style="background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 2px solid #007bff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: #007bff;">📐 エリア 1 (初期エリア)</h4>
+                            <span style="color: #6c757d; font-size: 12px;">削除不可</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>テキスト:</label>
+                            <textarea id="area-text-1" rows="2" placeholder="このエリアに表示するテキスト">テストテキスト1</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>エリア座標 (X1, Y1 - X2, Y2):</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+                                <input type="number" id="area-x1-1" value="0" min="0" max="127" placeholder="X1">
+                                <input type="number" id="area-y1-1" value="0" min="0" max="127" placeholder="Y1">
+                                <input type="number" id="area-x2-1" value="31" min="0" max="127" placeholder="X2">
+                                <input type="number" id="area-y2-1" value="31" min="0" max="127" placeholder="Y2">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>文字色:</label>
+                            <input type="text" id="area-color-1" value="white" placeholder="色名またはHEX">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>背景色:</label>
+                            <input type="text" id="area-bgcolor-1" value="black" placeholder="色名またはHEX">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>文字サイズ:</label>
+                            <select id="area-size-1">
+                                <option value="1">1 (Small)</option>
+                                <option value="2" selected>2 (Medium)</option>
+                                <option value="3">3 (Large)</option>
+                                <option value="4">4 (XLarge)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="sendMultiAreaText()">🚀 全エリア送信</button>
+                    <button onclick="clearAreaDisplay()">🗑️ 画面クリア</button>
+                </div>
+                
+                <div id="areaApiInfo" style="display: none; background: #e7f3ff; padding: 10px; border-radius: 4px; margin-top: 15px;">
+                    <small style="color: #0066cc;">🔹 v2 APIモード: 領域クリッピングとバッチ送信が有効</small>
+                </div>
+                
+                <div id="areaCurlCommand" class="curl-command" style="display: none;">
+                    <button class="copy-btn" onclick="copyAreaCurlCommand()">コピー</button>
+                    <pre id="areaCurlCommandText"></pre>
+                </div>
+            </div>
+            
+            <!-- 画像タブ -->
+            <div id="image-tab" class="tab-content">
+                <div class="form-group">
+                    <div class="image-upload" id="dropArea" onclick="document.getElementById('fileInput').click()">
+                        <h3>📁 画像を選択</h3>
+                        <p>クリックまたはドラッグ&ドロップ</p>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            対応形式: JPEG, PNG, GIF, BMP<br>
+                            自動的に128x128pxにリサイズされます
+                        </p>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" onchange="previewImage(event)">
+                    <img id="imagePreview" class="image-preview" alt="Preview">
+                </div>
+                
+                <div class="form-group">
+                    <label>デバイス番号:</label>
+                    <select id="imageDevice">
+                    </select>
+                    <small style="color: #666;">接続されているデバイスのみ表示</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>フィットモード:</label>
+                    <select id="imageFit">
+                        <option value="contain">Contain (全体表示)</option>
+                        <option value="cover">Cover (画面全体)</option>
+                        <option value="fill">Fill (引き伸ばし)</option>
+                        <option value="scale_down">Scale Down (縮小のみ)</option>
+                        <option value="none">None (そのまま)</option>
+                    </select>
+                </div>
+                
+                <div class="image-controls">
+                    <button onclick="sendImage()">🚀 画像送信</button>
+                    <button onclick="clearImage()">🗑️ 画像クリア</button>
+                </div>
+            </div>
+            
+            <!-- 描画タブ -->
+            <div id="draw-tab" class="tab-content">
+                <div class="form-group">
+                    <label>デバイス番号:</label>
+                    <select id="drawDevice">
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>図形タイプ:</label>
+                    <select id="shapeType">
+                        <option value="rect">四角形</option>
+                        <option value="line">線</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>座標 (X1, Y1, X2, Y2):</label>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                        <input type="number" id="x1" value="10" min="0" max="127" placeholder="X1">
+                        <input type="number" id="y1" value="10" min="0" max="127" placeholder="Y1">
+                        <input type="number" id="x2" value="50" min="0" max="127" placeholder="X2">
+                        <input type="number" id="y2" value="50" min="0" max="127" placeholder="Y2">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>色:</label>
+                    <input type="text" id="shapeColor" value="cyan" placeholder="色名またはHEX">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="shapeFill"> 塗りつぶし
+                    </label>
+                </div>
+                <button onclick="sendShape()">図形描画</button>
+            </div>
+            
+            <!-- デバイスタブ -->
+            <div id="devices-tab" class="tab-content">
+                <button onclick="refreshDevices()">🔄 デバイス更新</button>
+                <div id="deviceList" class="device-list"></div>
+            </div>
+        </div>
+        
+        <div class="status" id="status">
+            準備完了
+        </div>
+    </div>
+    
+    <script>
+        let currentColor = 'white';
+        let currentBgColor = 'black';
+        let selectedImage = null;
+        let connectedDevices = [];
+        let areaRegions = []; // 複数エリアを管理する配列
+        let areaIdCounter = 2; // エリアIDカウンター（初期エリア1から開始）
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            if (tabName === 'devices') {
+                refreshDevices();
+            }
+        }
+        
+        function selectColor(color) {
+            currentColor = color;
+            document.getElementById('textColor').value = color;
+        }
+        
+        function selectBgColor(color) {
+            currentBgColor = color;
+            document.getElementById('bgColor').value = color;
+        }
+        
+        function toggleDisplayMode() {
+            const mode = document.querySelector('input[name="displayMode"]:checked').value;
+            document.getElementById('coordinateMode').style.display = mode === 'coordinate' ? 'block' : 'none';
+            document.getElementById('areaMode').style.display = mode === 'area' ? 'block' : 'none';
+        }
+        
+        function toggleMultiAreaMode() {
+            const isMultiArea = document.getElementById('multiAreaCheck').checked;
+            document.getElementById('singleAreaMode').style.display = isMultiArea ? 'none' : 'block';
+            document.getElementById('multiAreaMode').style.display = isMultiArea ? 'block' : 'none';
+            
+            // 複数エリアモードに切り替えたときに初期エリアを追加
+            if (isMultiArea && areaRegions.length === 0) {
+                addAreaRegion();
+            }
+        }
+        
+        function addAreaRegion() {
+            const regionId = areaIdCounter++;
+            const region = {
+                id: regionId,
+                text: '',
+                row1: 0,
+                col1: 0,
+                row2: 7,
+                col2: 15,
+                tc: 'white',
+                bg: 'black',
+                fs: 3
+            };
+            areaRegions.push(region);
+            
+            const regionDiv = document.createElement('div');
+            regionDiv.id = `region-${regionId}`;
+            regionDiv.style.cssText = 'border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9;';
+            regionDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong>エリア ${regionId}</strong>
+                    <button onclick="removeAreaRegion(${regionId})" style="padding: 4px 8px; background: #ff4444; color: white; border: none; border-radius: 4px;">削除</button>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>テキスト:</label>
+                    <input type="text" id="region-text-${regionId}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="表示するテキスト" onchange="updateRegion(${regionId})">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>領域 (開始行,開始列,終了行,終了列):</label>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                        <input type="number" id="region-row1-${regionId}" value="0" min="0" max="15" placeholder="開始行" onchange="updateRegion(${regionId})">
+                        <input type="number" id="region-col1-${regionId}" value="0" min="0" max="15" placeholder="開始列" onchange="updateRegion(${regionId})">
+                        <input type="number" id="region-row2-${regionId}" value="7" min="0" max="15" placeholder="終了行" onchange="updateRegion(${regionId})">
+                        <input type="number" id="region-col2-${regionId}" value="15" min="0" max="15" placeholder="終了列" onchange="updateRegion(${regionId})">
+                    </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>文字色:</label>
+                    <input type="text" id="region-tc-${regionId}" value="white" placeholder="色名またはHEX" onchange="updateRegion(${regionId})">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>背景色:</label>
+                    <input type="text" id="region-bg-${regionId}" value="black" placeholder="色名またはHEX" onchange="updateRegion(${regionId})">
+                </div>
+                <div>
+                    <label>文字サイズ:</label>
+                    <select id="region-fs-${regionId}" onchange="updateRegion(${regionId})">
+                        <option value="1">1 (Small)</option>
+                        <option value="2" selected>2 (Medium)</option>
+                        <option value="3">3 (Large)</option>
+                        <option value="4">4 (XLarge)</option>
+                    </select>
+                </div>
+            `;
+            
+            document.getElementById('areaRegionsList').appendChild(regionDiv);
+        }
+        
+        function removeAreaRegion(regionId) {
+            areaRegions = areaRegions.filter(r => r.id !== regionId);
+            const regionDiv = document.getElementById(`region-${regionId}`);
+            if (regionDiv) {
+                regionDiv.remove();
+            }
+        }
+        
+        function updateRegion(regionId) {
+            const region = areaRegions.find(r => r.id === regionId);
+            if (region) {
+                region.text = document.getElementById(`region-text-${regionId}`).value;
+                region.row1 = parseInt(document.getElementById(`region-row1-${regionId}`).value);
+                region.col1 = parseInt(document.getElementById(`region-col1-${regionId}`).value);
+                region.row2 = parseInt(document.getElementById(`region-row2-${regionId}`).value);
+                region.col2 = parseInt(document.getElementById(`region-col2-${regionId}`).value);
+                region.tc = document.getElementById(`region-tc-${regionId}`).value;
+                region.bg = document.getElementById(`region-bg-${regionId}`).value;
+                region.fs = parseInt(document.getElementById(`region-fs-${regionId}`).value);
+            }
+        }
+        
+        async function sendText() {
+            const text = document.getElementById('textInput').value;
+            const device = document.getElementById('textDevice').value;
+            const color = document.getElementById('textColor').value;
+            const bgColor = document.getElementById('bgColor').value;
+            const x = document.getElementById('textX').value;
+            const y = document.getElementById('textY').value;
+            const size = document.getElementById('textSize').value;
+            
+            let curlCommand = '';
+            let response;
+            
+            try {
+                // v1 API + GET専用（シンプルモード）
+                const params = new URLSearchParams();
+                params.append('text', text);
+                params.append('device', device);
+                params.append('x', x);
+                params.append('y', y);
+                params.append('color', color);
+                params.append('size', size);
+                params.append('bgcolor', bgColor);
+                
+                response = await fetch('/send?' + params.toString());
+                curlCommand = `curl -X GET "http://localhost:18080/send?${params.toString()}"`;
+                
+                // curlコマンドを表示
+                showCurlCommand(curlCommand);
+                
+                const result = await response.json();
+                updateStatus(result.success || result.status === 'ok' ? '✅ テキスト送信成功' : '❌ エラー: ' + (result.error || 'Unknown error'), 
+                           result.success || result.status === 'ok' ? 'success' : 'error');
+            } catch (e) {
+                updateStatus('❌ 送信エラー: ' + e.message, 'error');
+            }
+        }
+        
+        function addMultiAreaRegion() {
+            const regionId = areaIdCounter++;
+            const regionDiv = document.createElement('div');
+            regionDiv.id = `area-region-${regionId}`;
+            regionDiv.className = 'area-region';
+            regionDiv.style = 'background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #dee2e6;';
+            
+            regionDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: #495057;">📐 エリア ${regionId}</h4>
+                    <button onclick="removeAreaRegion(${regionId})" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">❌ 削除</button>
+                </div>
+                
+                <div class="form-group">
+                    <label>テキスト:</label>
+                    <textarea id="area-text-${regionId}" rows="2" placeholder="このエリアに表示するテキスト">テストテキスト${regionId}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>エリア座標 (X1, Y1 - X2, Y2):</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+                        <input type="number" id="area-x1-${regionId}" value="${(regionId - 1) * 32}" min="0" max="127" placeholder="X1">
+                        <input type="number" id="area-y1-${regionId}" value="0" min="0" max="127" placeholder="Y1">
+                        <input type="number" id="area-x2-${regionId}" value="${Math.min((regionId) * 32 - 1, 127)}" min="0" max="127" placeholder="X2">
+                        <input type="number" id="area-y2-${regionId}" value="31" min="0" max="127" placeholder="Y2">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>文字色:</label>
+                    <input type="text" id="area-color-${regionId}" value="white" placeholder="色名またはHEX">
+                </div>
+                
+                <div class="form-group">
+                    <label>背景色:</label>
+                    <input type="text" id="area-bgcolor-${regionId}" value="black" placeholder="色名またはHEX">
+                </div>
+                
+                <div class="form-group">
+                    <label>文字サイズ:</label>
+                    <select id="area-size-${regionId}">
+                        <option value="1">1 (Small)</option>
+                        <option value="2" selected>2 (Medium)</option>
+                        <option value="3">3 (Large)</option>
+                        <option value="4">4 (XLarge)</option>
+                    </select>
+                </div>
+            `;
+            
+            document.getElementById('multiAreaRegions').appendChild(regionDiv);
+            areaRegions.push(regionId);
+            updateStatus(`✅ エリア ${regionId} を追加しました`, 'success');
+        }
+        
+        function removeAreaRegion(regionId) {
+            if (regionId === 1) {
+                updateStatus('⚠️ 初期エリアは削除できません', 'warning');
+                return;
+            }
+            
+            const regionDiv = document.getElementById(`area-region-${regionId}`);
+            if (regionDiv) {
+                regionDiv.remove();
+                areaRegions = areaRegions.filter(id => id !== regionId);
+                updateStatus(`✅ エリア ${regionId} を削除しました`, 'success');
+            }
+        }
+        
+        function toggleAreaApiVersion() {
+            const version = document.querySelector('input[name="areaApiVersion"]:checked').value;
+            const methodGroup = document.getElementById('areaSendMethodGroup');
+            const apiInfo = document.getElementById('areaApiInfo');
+            
+            if (version === 'v2') {
+                methodGroup.style.display = 'block';
+                apiInfo.style.display = 'block';
+            } else {
+                methodGroup.style.display = 'none';
+                apiInfo.style.display = 'none';
+            }
+        }
+        
+        async function sendMultiAreaText() {
+            const device = document.getElementById('areaTextDevice').value;
+            if (!device) {
+                updateStatus('❌ デバイスを選択してください', 'error');
+                return;
+            }
+            
+            const apiVersion = document.querySelector('input[name="areaApiVersion"]:checked').value;
+            const sendMethod = apiVersion === 'v2' ? 
+                document.querySelector('input[name="areaSendMethod"]:checked').value : 'GET';
+            
+            // 初期エリアを含む全エリアを収集
+            const allRegions = [1, ...areaRegions]; // 1は初期エリア
+            let successCount = 0;
+            let curlCommands = [];
+            
+            updateStatus(`⏳ ${allRegions.length}個のエリアを${apiVersion} APIで送信中...`, 'info');
+            
+            if (apiVersion === 'v2' && sendMethod === 'POST') {
+                // v2 API POSTでバッチ送信 - 正しいフォーマット
+                const regions = [];
+                for (const regionId of allRegions) {
+                    const text = document.getElementById(`area-text-${regionId}`)?.value;
+                    if (!text) continue;
+                    
+                    const x1 = parseInt(document.getElementById(`area-x1-${regionId}`)?.value || 0);
+                    const y1 = parseInt(document.getElementById(`area-y1-${regionId}`)?.value || 0);
+                    const x2 = parseInt(document.getElementById(`area-x2-${regionId}`)?.value || 31);
+                    const y2 = parseInt(document.getElementById(`area-y2-${regionId}`)?.value || 31);
+                    const color = document.getElementById(`area-color-${regionId}`)?.value || 'white';
+                    const bgColor = document.getElementById(`area-bgcolor-${regionId}`)?.value || 'black';
+                    const size = parseInt(document.getElementById(`area-size-${regionId}`)?.value || '2');
+                    
+                    // v2 API POST形式: id(数値), area(文字列), その他パラメータ
+                    regions.push({
+                        id: regionId,
+                        area: `${x1},${y1},${x2},${y2}`,
+                        text: text,
+                        color: color,
+                        bgcolor: bgColor,
+                        size: size
+                    });
+                }
+                
+                if (regions.length > 0) {
+                    try {
+                        const requestData = {
+                            device: device.toString(), // v2 APIではdeviceは文字列
+                            overwrite: true,
+                            regions: regions
+                        };
+                        
+                        const response = await fetch('/api/draw', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestData)
+                        });
+                        
+                        const curlCommand = `curl -X POST "http://localhost:18080/api/draw" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(requestData, null, 2)}'`;
+                        curlCommands.push(curlCommand);
+                        
+                        const result = await response.json();
+                        if (result.success || result.status === 'ok') {
+                            successCount = regions.length;
+                        }
+                    } catch (e) {
+                        console.error('バッチ送信エラー:', e);
+                    }
+                }
+            } else {
+                // v1 APIまたはv2 API GETで個別送信
+                for (const regionId of allRegions) {
+                    const text = document.getElementById(`area-text-${regionId}`)?.value;
+                    if (!text) continue;
+                    
+                    const x1 = document.getElementById(`area-x1-${regionId}`)?.value || 0;
+                    const y1 = document.getElementById(`area-y1-${regionId}`)?.value || 0;
+                    const x2 = document.getElementById(`area-x2-${regionId}`)?.value || 31;
+                    const y2 = document.getElementById(`area-y2-${regionId}`)?.value || 31;
+                    const color = document.getElementById(`area-color-${regionId}`)?.value || 'white';
+                    const bgColor = document.getElementById(`area-bgcolor-${regionId}`)?.value || 'black';
+                    const size = document.getElementById(`area-size-${regionId}`)?.value || '2';
+                    
+                    try {
+                        let response;
+                        let curlCommand;
+                        
+                        if (apiVersion === 'v1') {
+                            // v1 API
+                            const params = new URLSearchParams();
+                            params.append('text', text);
+                            params.append('device', device);
+                            params.append('x', x1);
+                            params.append('y', y1);
+                            params.append('color', color);
+                            params.append('size', size);
+                            params.append('bgcolor', bgColor);
+                            
+                            response = await fetch('/send?' + params.toString());
+                            curlCommand = `curl -X GET "http://localhost:18080/send?${params.toString()}" # エリア${regionId}: (${x1},${y1})-(${x2},${y2})`;
+                        } else {
+                            // v2 API GET - r1,r2形式
+                            const params = new URLSearchParams();
+                            params.append('device', device);
+                            // v2 APIはr1,r2,r3...形式: "x1,y1,x2,y2,text,color,bgcolor,size"
+                            const regionParam = `${x1},${y1},${x2},${y2},${text},${color},${bgColor},${size}`;
+                            params.append(`r${regionId}`, regionParam);
+                            
+                            response = await fetch('/api/draw?' + params.toString());
+                            curlCommand = `curl -X GET "http://localhost:18080/api/draw?device=${device}&r${regionId}=${encodeURIComponent(regionParam)}" # エリア${regionId}`;
+                        }
+                        
+                        curlCommands.push(curlCommand);
+                        
+                        const result = await response.json();
+                        if (result.success || result.status === 'ok') {
+                            successCount++;
+                        }
+                        
+                        // エリア間に少し遅延を入れる
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } catch (e) {
+                        console.error(`エリア ${regionId} の送信エラー:`, e);
+                    }
+                }
+            }
+            
+            // curlコマンドを表示
+            if (curlCommands.length > 0) {
+                showAreaCurlCommand(curlCommands.join('\n'));
+            }
+            
+            if (successCount === allRegions.length) {
+                updateStatus(`✅ 全${allRegions.length}個のエリアへの送信が成功しました`, 'success');
+            } else {
+                updateStatus(`⚠️ ${successCount}/${allRegions.length}個のエリアへの送信が成功しました`, 'warning');
+            }
+        }
+        
+        // 旧sendAreaText関数は削除または内部用に変更
+        async function sendAreaText() {
+            const text = document.getElementById('areaTextInput').value;
+            const device = document.getElementById('areaTextDevice').value;
+            const color = document.getElementById('areaTextColor').value;
+            const bgColor = document.getElementById('areaBgColor').value;
+            const x1 = document.getElementById('areaX1').value;
+            const y1 = document.getElementById('areaY1').value;
+            const x2 = document.getElementById('areaX2').value;
+            const y2 = document.getElementById('areaY2').value;
+            const size = document.getElementById('areaTextSize').value;
+            
+            let curlCommand = '';
+            let response;
+            
+            try {
+                // v1 API + GET専用（エリア指定）
+                // エリア指定でもv1 APIを使用し、左上座標をx,yで指定
+                const params = new URLSearchParams();
+                params.append('text', text);
+                params.append('device', device);
+                params.append('x', x1);  // エリアの左上座標を使用
+                params.append('y', y1);
+                params.append('color', color);
+                params.append('size', size);
+                params.append('bgcolor', bgColor);
+                
+                response = await fetch('/send?' + params.toString());
+                curlCommand = `curl -X GET "http://localhost:18080/send?${params.toString()}" # エリア: (${x1},${y1})-(${x2},${y2})`;
+                
+                // curlコマンドを表示
+                showAreaCurlCommand(curlCommand);
+                
+                const result = await response.json();
+                updateStatus(result.success || result.status === 'ok' ? '✅ エリアテキスト送信成功' : '❌ エラー: ' + (result.error || 'Unknown error'), 
+                           result.success || result.status === 'ok' ? 'success' : 'error');
+            } catch (e) {
+                updateStatus('❌ 送信エラー: ' + e.message, 'error');
+            }
+        }
+        
+        async function clearAreaDisplay() {
+            const device = document.getElementById('areaTextDevice').value;
+            const params = new URLSearchParams({
+                device: device,
+                cmd: 'clear'
+            });
+            
+            try {
+                const response = await fetch('/send?' + params);
+                const result = await response.json();
+                updateStatus(result.success ? '✅ 画面クリア成功' : '❌ エラー: ' + result.error,
+                           result.success ? 'success' : 'error');
+            } catch (e) {
+                updateStatus('❌ クリアエラー: ' + e.message, 'error');
+            }
+        }
+        
+        async function clearDisplay() {
+            const device = document.getElementById('textDevice').value;
+            const params = new URLSearchParams({
+                device: device,
+                cmd: 'clear'
+            });
+            
+            try {
+                const response = await fetch('/send?' + params);
+                const result = await response.json();
+                updateStatus(result.success ? '✅ 画面クリア成功' : '❌ エラー: ' + result.error,
+                           result.success ? 'success' : 'error');
+            } catch (e) {
+                updateStatus('❌ クリアエラー: ' + e.message, 'error');
+            }
+        }
+        
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedImage = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    updateStatus(`📷 画像選択: ${file.name} (${Math.round(file.size/1024)}KB)`, 'info');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        async function sendImage() {
+            if (!selectedImage) {
+                updateStatus('❌ 画像を選択してください', 'error');
+                return;
+            }
+            
+            const device = document.getElementById('imageDevice').value;
+            const fit = document.getElementById('imageFit').value;
+            
+            updateStatus('⏳ 画像送信中...', 'info');
+            
+            try {
+                // ファイルを読み込んでバイナリデータとして送信
+                const arrayBuffer = await selectedImage.arrayBuffer();
+                
+                const response = await fetch(`/api/image/post?device=${device}&fit=${fit}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': selectedImage.type || 'application/octet-stream'
+                    },
+                    body: arrayBuffer
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    const tiles = result.details?.ble_optimization?.tiles_sent || 0;
+                    const time = result.details?.total_time_ms || 0;
+                    updateStatus(`✅ 画像送信成功 (${tiles}タイル, ${time}ms)`, 'success');
+                } else {
+                    updateStatus('❌ エラー: ' + result.error, 'error');
+                }
+            } catch (e) {
+                updateStatus('❌ 画像送信エラー: ' + e.message, 'error');
+            }
+        }
+        
+        function clearImage() {
+            selectedImage = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            updateStatus('画像をクリアしました', 'info');
+        }
+        
+        async function sendShape() {
+            const device = document.getElementById('drawDevice').value;
+            const type = document.getElementById('shapeType').value;
+            const x1 = document.getElementById('x1').value;
+            const y1 = document.getElementById('y1').value;
+            const x2 = document.getElementById('x2').value;
+            const y2 = document.getElementById('y2').value;
+            const color = document.getElementById('shapeColor').value;
+            const fill = document.getElementById('shapeFill').checked;
+            
+            const data = {
+                device: parseInt(device),
+                commands: []
+            };
+            
+            if (type === 'rect') {
+                data.commands.push({
+                    type: 'rect',
+                    x: parseInt(x1),
+                    y: parseInt(y1),
+                    width: parseInt(x2) - parseInt(x1),
+                    height: parseInt(y2) - parseInt(y1),
+                    color: color,
+                    fill: fill
+                });
+            } else if (type === 'line') {
+                data.commands.push({
+                    type: 'line',
+                    x1: parseInt(x1),
+                    y1: parseInt(y1),
+                    x2: parseInt(x2),
+                    y2: parseInt(y2),
+                    color: color,
+                    width: 1
+                });
+            }
+            
+            try {
+                const response = await fetch('/api/draw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                updateStatus(result.success ? '✅ 図形描画成功' : '❌ エラー: ' + (result.error?.message || result.error),
+                           result.success ? 'success' : 'error');
+            } catch (e) {
+                updateStatus('❌ 描画エラー: ' + e.message, 'error');
+            }
+        }
+        
+        async function refreshDevices() {
+            try {
+                const response = await fetch('/api/devices');
+                const result = await response.json();
+                
+                const list = document.getElementById('deviceList');
+                if (result.success && result.data.devices.length > 0) {
+                    connectedDevices = result.data.devices;
+                    
+                    // デバイス一覧を更新
+                    list.innerHTML = connectedDevices.map((d, i) => `
+                        <div class="device-item">
+                            <strong>デバイス ${i + 1}: ${d.name}</strong>
+                            <div>状態: ${d.connected ? '🟢 接続中' : '🔴 切断'}</div>
+                            <div>最終更新: ${new Date(d.last_seen).toLocaleTimeString()}</div>
+                        </div>
+                    `).join('');
+                    
+                    // セレクトボックスを更新
+                    updateDeviceSelectors();
+                    
+                    updateStatus(`${connectedDevices.length}台のデバイスを検出`, 'info');
+                } else {
+                    connectedDevices = [];
+                    list.innerHTML = '<div class="device-item">接続されたデバイスがありません</div>';
+                    updateDeviceSelectors();
+                    updateStatus('デバイスが接続されていません', 'info');
+                }
+            } catch (e) {
+                updateStatus('❌ デバイス取得エラー: ' + e.message, 'error');
+            }
+        }
+        
+        function updateDeviceSelectors() {
+            const selectors = ['textDevice', 'areaTextDevice', 'imageDevice', 'drawDevice'];
+            
+            selectors.forEach(selectorId => {
+                const selector = document.getElementById(selectorId);
+                if (selector) {
+                    // 現在の選択を保存
+                    const currentValue = selector.value;
+                    
+                    // オプションをクリア
+                    selector.innerHTML = '';
+                    
+                    // 接続中のデバイスを追加（表示は1から、内部値も1から）
+                    connectedDevices.forEach((device, index) => {
+                        if (device.connected) {
+                            const option = document.createElement('option');
+                            option.value = index + 1;  // 内部値も1ベースに変更（サーバー側が1ベースを期待）
+                            option.textContent = `デバイス ${index + 1}: ${device.name}`;  // 表示は1ベース
+                            selector.appendChild(option);
+                        }
+                    });
+                    
+                    // 可能であれば以前の選択を復元、そうでなければ最初のデバイスを選択
+                    if (selector.querySelector(`option[value="${currentValue}"]`)) {
+                        selector.value = currentValue;
+                    } else if (selector.options.length > 0) {
+                        selector.value = selector.options[0].value;  // 最初のオプションを選択
+                    }
+                }
+            });
+        }
+        
+        function showCurlCommand(command) {
+            const curlDiv = document.getElementById('curlCommand');
+            const curlText = document.getElementById('curlCommandText');
+            curlDiv.style.display = 'block';
+            curlText.textContent = command;
+        }
+        
+        function showAreaCurlCommand(command) {
+            const curlDiv = document.getElementById('areaCurlCommand');
+            const curlText = document.getElementById('areaCurlCommandText');
+            curlDiv.style.display = 'block';
+            curlText.textContent = command;
+        }
+        
+        function copyAreaCurlCommand() {
+            const command = document.getElementById('areaCurlCommandText').textContent;
+            navigator.clipboard.writeText(command).then(() => {
+                updateStatus('✅ curlコマンドをコピーしました', 'success');
+            }).catch(err => {
+                updateStatus('❌ コピー失敗: ' + err, 'error');
+            });
+        }
+        
+        async function copyCurlCommand() {
+            const curlText = document.getElementById('curlCommandText').textContent;
+            
+            // クリップボードAPIが利用可能かチェック
+            if (navigator.clipboard && window.isSecureContext) {
+                try {
+                    await navigator.clipboard.writeText(curlText);
+                    updateStatus('✅ curlコマンドをコピーしました', 'success');
+                } catch (err) {
+                    console.error('Clipboard API failed:', err);
+                    fallbackCopyTextToClipboard(curlText);
+                }
+            } else {
+                // フォールバック方法を使用
+                fallbackCopyTextToClipboard(curlText);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    updateStatus('✅ curlコマンドをコピーしました', 'success');
+                } else {
+                    updateStatus('⚠️ 手動でコピーしてください', 'warning');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                updateStatus('⚠️ 手動でコピーしてください', 'warning');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+        
+        // ドラッグ&ドロップ対応
+        const dropArea = document.getElementById('dropArea');
+        if (dropArea) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.add('dragover');
+                }, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.remove('dragover');
+                }, false);
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    document.getElementById('fileInput').files = files;
+                    previewImage({ target: { files: files } });
+                }
+            }, false);
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus('✨ Notif v5 準備完了', 'success');
+            // デバイス一覧を初期取得
+            refreshDevices();
+        });
+    </script>
+</body>
+</html>

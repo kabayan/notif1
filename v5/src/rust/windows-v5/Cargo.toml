@@ -1,0 +1,77 @@
+[package]
+name = "notif-v5-windows"
+version = "5.0.0"
+edition = "2021"
+build = "build.rs"
+
+[[bin]]
+name = "notif-server-v5"
+path = "src/main.rs"
+
+[dependencies]
+# 共通ライブラリ（v5機能有効化）
+notif-common-v5 = { path = "../common-v5", features = ["http-endpoints"] }
+
+# v5画像機能用の依存関係追加（actix-multipartをルート直接にも追加）
+actix-multipart = "0.6"
+
+# Web framework
+actix-web = "4"
+actix-cors = "0.7"
+actix-web-lab = "0.20"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Windows APIs（v2互換）
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Foundation",
+    "Foundation_Collections",
+    "Devices_Bluetooth",
+    "Devices_Bluetooth_Advertisement",
+    "Devices_Bluetooth_GenericAttributeProfile",
+    "Storage_Streams",
+    "Devices_Enumeration",
+    "Devices_Radios",
+    "Win32_Foundation",
+    "Win32_System_Console",
+    "Win32_System_SystemInformation",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Threading",
+    "implement"
+]}
+windows-core = "0.58"
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+uuid = { version = "1", features = ["v4", "v7"] }
+futures = "0.3"
+futures-util = "0.3"
+async-trait = "0.1"
+chrono = "0.4"
+
+[features]
+default = ["http-endpoints"]
+http-endpoints = []
+
+[build-dependencies]
+chrono = "0.4"
+
+[dev-dependencies]
+actix-web-httpauth = "0.8"
+mockall = "0.11"
